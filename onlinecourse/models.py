@@ -48,8 +48,7 @@ class Learner(models.Model):
     social_link = models.URLField(max_length=200)
 
     def __str__(self):
-        return self.user.username + "," + \
-               self.occupation
+        return self.user.username + "," + self.occupation
 
 
 # Course model
@@ -64,8 +63,7 @@ class Course(models.Model):
     is_enrolled = False
 
     def __str__(self):
-        return "Name: " + self.name + "," + \
-               "Description: " + self.description
+        return "Name: " + self.name + "," + "Description: " + self.description
 
 
 # Lesson model
@@ -77,8 +75,6 @@ class Lesson(models.Model):
 
 
 # Enrollment model
-# <HINT> Once a user enrolled a class, an enrollment entry should be created between the user and course
-# And we could use the enrollment to track information such as exam submissions
 class Enrollment(models.Model):
     AUDIT = 'audit'
     HONOR = 'honor'
@@ -95,9 +91,53 @@ class Enrollment(models.Model):
     rating = models.FloatField(default=5.0)
 
 
-# One enrollment could have multiple submission
-# One submission could have multiple choices
-# One choice could belong to multiple submissions
-#class Submission(models.Model):
-#    enrollment = models.ForeignKey(Enrollment, on_delete=models.CASCADE)
-#    choices = models.ManyToManyField(Choice)
+# ==================== NEW MODELS FOR ASSESSMENT FEATURE ====================
+
+class Question(models.Model):
+    """
+    Question model – stores exam questions for a course.
+    Each question belongs to one Course (Many-to-One).
+    """
+    course = models.ForeignKey(Course, on_delete=models.CASCADE)
+    question_text = models.CharField(max_length=500)
+    grade_point = models.IntegerField(default=1)  # points awarded if answered correctly
+
+    def __str__(self):
+        return self.question_text
+
+    def is_get_score(self, selected_ids):
+        """
+        Determine if the learner gets the score for this question.
+        selected_ids: list of Choice IDs that the learner selected.
+        Returns True only if all correct choices are selected and no extra incorrect choices.
+        """
+        all_correct = self.choice_set.filter(is_correct=True).count()
+        selected_correct = self.choice_set.filter(is_correct=True, id__in=selected_ids).count()
+        return all_correct == selected_correct
+
+
+class Choice(models.Model):
+    """
+    Choice model – stores possible answers for a question.
+    Each choice belongs to one Question (Many-to-One).
+    """
+    question = models.ForeignKey(Question, on_delete=models.CASCADE)
+    choice_text = models.CharField(max_length=200)
+    is_correct = models.BooleanField(default=False)
+
+    def __str__(self):
+        return self.choice_text
+
+
+class Submission(models.Model):
+    """
+    Submission model – stores a learner's submission for an exam.
+    Each submission is linked to an Enrollment (Many-to-One).
+    It can contain many selected Choices (Many-to-Many).
+    """
+    enrollment = models.ForeignKey(Enrollment, on_delete=models.CASCADE)
+    choices = models.ManyToManyField(Choice)
+    submission_date = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Submission #{self.id} by {self.enrollment.user.username} for {self.enrollment.course.name}"
