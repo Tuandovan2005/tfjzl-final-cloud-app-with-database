@@ -1,33 +1,40 @@
 from django.contrib import admin
-# <HINT> Import any new Models here
 from .models import Course, Lesson, Instructor, Learner, Question, Choice, Submission
 
-# <HINT> Register QuestionInline and ChoiceInline classes here
-
-
+# Inline classes for nested editing
 class LessonInline(admin.StackedInline):
     model = Lesson
     extra = 5
 
+class ChoiceInline(admin.StackedInline):
+    model = Choice
+    extra = 2
 
-# Register your models here.
+class QuestionInline(admin.StackedInline):
+    model = Question
+    extra = 2
+
+# Admin for Course with Lessons inline
 class CourseAdmin(admin.ModelAdmin):
     inlines = [LessonInline]
     list_display = ('name', 'pub_date')
     list_filter = ['pub_date']
     search_fields = ['name', 'description']
 
+# Admin for Question with Choices inline
+class QuestionAdmin(admin.ModelAdmin):
+    inlines = [ChoiceInline]
+    list_display = ('question_text',)   # Hiển thị nội dung câu hỏi
 
+# Admin for Lesson
 class LessonAdmin(admin.ModelAdmin):
     list_display = ['title']
 
-
-# <HINT> Register Question and Choice models here
-
+# Register models with their admin classes
 admin.site.register(Course, CourseAdmin)
 admin.site.register(Lesson, LessonAdmin)
 admin.site.register(Instructor)
 admin.site.register(Learner)
-admin.site.register(Question)
+admin.site.register(Question, QuestionAdmin)
 admin.site.register(Choice)
 admin.site.register(Submission)
